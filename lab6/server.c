@@ -44,7 +44,7 @@ adr_moj.sin_addr.s_addr = htonl(INADDR_ANY);
    if (bind(s,(struct sockaddr *) &adr_moj, sizeof(adr_moj))==-1)
        printf("Błąd");
 
-printf("Czekam na instrukcje..");
+
 do {
 	rec=recvfrom(s, &msg, blen, 0,(struct sockaddr *) &adr_cli, &slen);
 	switch(msg.typ){
@@ -53,6 +53,12 @@ do {
 			break;
 		case READ:
 			msg.ile=read(msg.fh,msg.buf,SIZE);
+			break;
+		case OPENW:
+			msg.fh=open(msg.buf, O_WRONLY|O_CREAT, S_IRWXU|S_IRWXG|S_IRWXO);
+			break;
+		case WRITE:
+			msg.ile=write(msg.fh,msg.buf, msg.ile);
 			break;
 		default:
 			break;

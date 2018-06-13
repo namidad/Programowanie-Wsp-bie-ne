@@ -30,9 +30,9 @@ int main(int argc, char * argv[]) {
 
 
 struct sockaddr_in adr_moj, adr_serw, adr_x;
-int s, i, slen=sizeof(adr_serw), rec, blen=sizeof(mms_t), menu;
+int s, i, slen=sizeof(adr_serw), rec, blen=sizeof(mms_t), menu, send;
 char buf[BUFLEN];
-char name[100];
+char name[100],name2[100];
 s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 mms_t msg;
 
@@ -48,7 +48,7 @@ if (inet_aton(argv[1], &adr_serw.sin_addr)==0) {
         _exit(1);
    }
 
-printf("\n1. Czytaj z pliku\n2. Zapis do pliku\nTwoj wybor: ");
+printf("\n1. Odczyt pliku\n2. Zapis pliku\nTwoj wybor: ");
 scanf("%d", &menu);
 
 
@@ -59,21 +59,40 @@ switch(menu){
 		msg.typ = OPENR;
 		//tworzymy stringa z nazwy pliku i zapisujemy do msg.buf
 		sprintf(msg.buf, "%s", name);
-		int send;
+
 		send=sendto(s, &msg, blen, 0,(struct sockaddr *)&adr_serw,(socklen_t) slen);
       		rec = recvfrom(s, &msg, blen, 0,(struct sockaddr *) &adr_x,(socklen_t *) &slen);	
-		do{
-		msg.typ = READ;
-		send=sendto(s, &msg, blen, 0,(struct sockaddr *)&adr_serw,(socklen_t) slen);
-		rec=recvfrom(s, &msg, blen, 0,(struct sockaddr *) &adr_x,(socklen_t *) &slen);
-		printf("%s\n", msg.buf);
-		}while(msg.ile==SIZE);
-
+			do{
+				msg.typ = READ;
+				send=sendto(s, &msg, blen, 0,(struct sockaddr *)&adr_serw,(socklen_t) slen);
+				rec=recvfrom(s, &msg, blen, 0,(struct sockaddr *) &adr_x,(socklen_t *) &slen);
+				printf("%s\n", msg.buf);
+			}while(msg.ile==SIZE);
 		break;
+
 	case 2:
+
+		printf("\nPodaj nazwe pliku do odczytu po strony serwera: ");
+		scanf("%s", name);
+		printf("\nPodaje nazwe pliku do utworzenia: ");
+		scanf("%s", name2);
+		msg.typ = OPENW;
+		sprintf(msg.buf, "%s", name2);
+
+		//uchwyt pliku		
+		int fh= open(name, O_RDONLY);
+		
+		send=sendto(s, &msg, blen, 0,(struct sockaddr *)&adr_serw,(socklen_t) slen);
+		rec=recvfrom(s, &msg, blen, 0,(struct sockaddr *) &adr_x,(socklen_t *) &slen);	
+			do{
+				msg.typ=WRITE;
+				msg.ile=read(fh, msg.buf, SIZE);
+				send = sendto(s, &msg, blen, 0,(struct sockaddr *)&adr_serw,(socklen_t) slen);
+				rec = recvfrom(s, &msg, blen, 0,(struct sockaddr *) &adr_x,(socklen_t *) &slen);
+			}while(msg.ile==SIZE);
 		
 		break;
-	
+
 	default:
 	
 		break;
